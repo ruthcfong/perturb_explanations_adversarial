@@ -1,6 +1,6 @@
 import caffe
 
-do_plotting = False 
+do_plotting = True 
 import numpy as np
 import pylab
 if do_plotting:
@@ -363,21 +363,18 @@ def optimize_mask(net, path, target, labels, given_gradient = False, norm_score 
         mask[mask < 0] = 0
         
         if debug or ((t+1) % plot_step == 0):
-            print 'plot'
-            
-
             if null_type == 'avg_blur_blank_noise':
                 ax[0,0].imshow(net_transformer.deprocess('data', img_[0]))
                 rand_i = np.random.randint(3)
                 ax[0,1].imshow(net_transformer.deprocess('data', x[rand_i]))
                 max_i = np.argmax(np.squeeze(net.blobs[end_layer].data[rand_i]))
-                ax[0,1].set_title('%s %.2f' % (labels[max_i], np.squeeze(net.blobs[end_layer].data[rand_i])[max_i]))
+                ax[0,1].set_title('%s %.2f' % (get_short_class_name(max_i), np.squeeze(net.blobs[end_layer].data[rand_i])[max_i]))
             else:
                 ax[0,0].imshow(net_transformer.deprocess('data', img_))
                 ax[0,1].imshow(net_transformer.deprocess('data', x))
                 max_i = np.argmax(np.squeeze(net.blobs[end_layer].data))
-                ax[0,1].set_title('%s %.2f' % (labels[max_i], np.squeeze(net.blobs[end_layer].data)[max_i]))
-            ax[0,0].set_title('%s %.2f' % (labels[orig_max_i], orig_output[orig_max_i]))
+                ax[0,1].set_title('%s %.2f' % (get_short_class_name(max_i), np.squeeze(net.blobs[end_layer].data)[max_i]))
+            ax[0,0].set_title('%s %.2f' % (get_short_class_name(orig_max_i), orig_output[orig_max_i]))
             ax[1,0].imshow(mask*255)
             ax[1,1].imshow(mask_w_noise*255)
             ax[3,1].plot(E[:(t+1),0])

@@ -258,7 +258,12 @@ def compute_heatmap(net, transformer, paths, labels, heatmap_type, topBlobName, 
         else:
             attMaps = np.squeeze(((np.abs(net.blobs[outputBlobName].diff)**norm_deg).sum(1))**(1/float(norm_deg)))
             # TODO: test this case        
-    
+   
+    if gpu == None:
+        caffe.set_mode_cpu()
+    else:
+        caffe.set_mode_gpu()
+
     return attMaps
 
 
