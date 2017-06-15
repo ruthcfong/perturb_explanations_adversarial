@@ -7,7 +7,7 @@ from shutil import copyfile
 from defaults import (caffe_dir, alexnet_prototxt, alexnet_model, googlenet_prototxt, googlenet_model, googlenet_voc_prototxt, googlenet_voc_model, 
     googlenet_coco_prototxt, googlenet_coco_model, vgg16_prototxt, vgg16_model)
 
-def create_heldout_annotated_dir(old_ann_dir, new_heldout_ann_dir, imdb='../../../data/ilsvrc12/annotated_train_heldout_imdb.txt'):
+def create_heldout_annotated_dir(old_ann_dir, new_heldout_ann_dir, imdb='../data/ilsvrc12/annotated_train_heldout_imdb.txt'):
     (paths, _) = read_imdb(imdb)
     if not os.path.exists(new_heldout_ann_dir):
         os.makedirs(new_heldout_ann_dir)
@@ -298,7 +298,7 @@ def compute_overlap(bb, objs, label):
     return ov_vector
 
 def compute_localization_results(bb_file, ann_paths, verbose=False, synsets=np.loadtxt(os.path.join(caffe_dir, 'data/ilsvrc12/synsets.txt'), 
-    str, delimiter='\t'), reverse_indexing=np.loadtxt('../../../data/ilsvrc12/synset_order_to_ascii_order.txt', dtype=int)):
+    str, delimiter='\t'), reverse_indexing=np.loadtxt('../data/ilsvrc12/synset_order_to_ascii_order.txt', dtype=int)):
     if verbose:
         print 'Loading bounding boxes from', bb_file
     bb_data = np.loadtxt(bb_file)
