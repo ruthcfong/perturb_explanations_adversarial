@@ -1,8 +1,10 @@
 import caffe
 import numpy as np
 from bs4 import BeautifulSoup
-import os
+import os, time
 from shutil import copyfile
+import torch
+from torch.autograd import Variable
 
 from defaults import (caffe_dir, alexnet_prototxt, alexnet_model, googlenet_prototxt, googlenet_model, googlenet_voc_prototxt, googlenet_voc_model, 
     googlenet_coco_prototxt, googlenet_coco_model, vgg16_prototxt, vgg16_model)
@@ -341,3 +343,177 @@ def find_labels(phrase, labels_desc = np.loadtxt(os.path.join(caffe_dir, 'data/i
 def get_short_class_name(label_i, labels_desc = np.loadtxt(os.path.join(caffe_dir, 'data/ilsvrc12/synset_words.txt'), str, delimiter='\t')
 ):
     return ' '.join(labels_desc[label_i].split(',')[0].split()[1:])
+
+class AverageMeter(object):
+    """Computes and stores the average and current value"""
+    def __init__(self):
+        self.reset()
+
+    def reset(self):
+        self.val = 0
+        self.avg = 0
+        self.sum = 0
+        self.count = 0
+
+    def update(self, val, n=1):
+        self.val = val
+        self.sum += val * n
+        self.count += n
+        self.avg = self.sum / self.count
+
+def save_state(fn, state, best_fn = None, is_best=False):
+    torch.save(state, fn)
+    if is_best:
+        assert(best_fn is not None)
+        copyfile(fn, best_fn)
+    print 'saved state to', fn
+
+class GetFirstChannel(object):
+    def __call__(self, img):
+        return img[0,:,:].unsqueeze(0)
+
+def adjust_learning_rate(optimizer, epoch, starting_lr, freq = 30):
+    """Sets the learning rate to the initial LR decayed by 10 every 30 epochs"""
+    lr = starting_lr * (0.1 ** (epoch // freq))
+    for param_group in optimizer.param_groups:
+        param_group['lr'] = lr
+
+def accuracy(output, target, topk=(1,)):
+    """Computes the precision@k for the specified values of k"""
+    maxk = max(topk)
+    batch_size = target.size(0)
+
+    #print output.size(), target.size()
+    _, pred = output.topk(maxk, 1, True, True)
+    pred = pred.t()
+    #print pred, target
+    correct = pred.eq(target.view(1, -1).expand_as(pred))
+
+    res = []
+    for k in topk:
+        correct_k = correct[:k].view(-1).float().sum(0)
+        res.append(correct_k.mul_(100.0 / batch_size))
+    return res
+
+def get_correct_indicator(output, target):
+    topk=(1,)
+    maxk = max(topk)
+    batch_size = target.size(0)
+
+    #print output.size(), target.size()
+    _, pred = output.topk(maxk, 1, True, True)
+    pred = pred.t()
+    #print pred, target
+    correct = pred.eq(target.view(1, -1).expand_as(pred))
+
+
+    k = topk[0]
+    correct_k = correct[:k].view(-1).float().numpy()
+    return correct_k
+
+def get_correctly_classified(loader, model, cuda = False, print_freq = 100):
+    model.eval()
+    volatile=True
+    batch_time = AverageMeter()
+    data_time = AverageMeter()
+    losses = AverageMeter()
+    accs = AverageMeter()
+
+    start = time.time()
+    indicator = []
+    for i, (input, target) in enumerate(loader):
+        data_time.update(time.time() - start)
+
+        input_var = (Variable(input.cuda(), volatile=volatile) if cuda
+                     else Variable(input, volatile=volatile))
+        target_var = (Variable(target.cuda(), volatile=volatile) if cuda
+                     else Variable(target, volatile=volatile))
+        output_var = model(input_var)
+        indicator.extend(get_correct_indicator(output_var.data.cpu(), target))
+        if i % print_freq == 0:
+            print '%d/%d: avg acc=%.4f' % (i+1, len(loader), np.sum(indicator)/float(len(indicator)))  
+    return indicator
+
+def run_epoch(loader, model, criterion, optimizer, epoch, train = True, cuda = False,
+        print_freq = 100, save_freq = 100, checkpoint_fn = None, best_fn = None):
+    if train:
+        model.train()
+        volatile=False
+    else:
+        model.eval()
+        volatile=True
+    batch_time = AverageMeter()
+    data_time = AverageMeter()
+    losses = AverageMeter()
+    accs = AverageMeter()
+
+    start = time.time()
+    for i, (input, target) in enumerate(loader):
+        data_time.update(time.time() - start)
+
+        input_var = (Variable(input.cuda(), volatile=volatile) if cuda
+                     else Variable(input, volatile=volatile))
+        target_var = (Variable(target.cuda(), volatile=volatile) if cuda
+                     else Variable(target, volatile=volatile))
+        output_var = model(input_var)
+        loss = criterion(output_var, target_var)
+        acc = accuracy(output_var.data.cpu(), target)
+        losses.update(loss.data[0], input.size(0))
+        accs.update(acc[0].numpy()[0], input.size(0))
+
+        if train:
+            # compute gradient and do optimization step
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
+
+
+        batch_time.update(time.time() - start)
+
+        if i % print_freq == 0:
+            if train:
+                print('Epoch {0}[{1}/{2}]\t'
+                        'Time {batch_time.val:.3f} {batch_time.avg:.3f}\t'
+                        'Data {data_time.val:.3f} {data_time.avg:.3f}\t'
+                        'Loss {losses.val:.4f} {losses.avg:.4f}\t'
+                        'Acc {accs.val:.4f} {accs.avg:.4f}\t'.format(epoch, i, len(loader),
+                        batch_time=batch_time, data_time=data_time, losses=losses, accs=accs
+                     ))
+            else:
+                print('Test [{}/{}]\t'
+                  'Time {batch_time.val:.3f} {batch_time.avg:.3f}\t'
+                  'Data {data_time.val:.3f} {data_time.avg:.3f}\t'
+                  'Loss {loss.val:.4f} {loss.avg:.4f}\t'
+                  'Acc {accs.val:.4f} {accs.avg:.4f}\t'.format(i, len(loader),
+                                   batch_time=batch_time,
+                                   data_time=data_time,
+                                   loss=losses, accs=accs
+                 ))
+
+        if (save_freq is not None and i % save_freq == 0) and checkpoint_fn is not None:
+            if train:
+                state = {'epoch': epoch+1,
+                         'batch':i+1,
+                         'state_dict': model.state_dict(),
+                         'avg_loss': losses.avg,
+                }
+                save_state(checkpoint_fn, state)
+
+        start = time.time()
+
+    if train:
+        print ('Epoch {0}\t'
+                'Avg Time {batch_time.avg:.3f}\t'
+                'Avg Data {data_time.avg:.3f}\t'
+                'Avg Loss {losses.avg:.4f}\t'
+                'Avg Acc {accs.avg:.4f}\t'.format(epoch, batch_time=batch_time,
+                    data_time=data_time, losses=losses, accs=accs))
+    else:
+        print ('Test \t'
+                'Avg Time {batch_time.avg:.3f}\t'
+                'Avg Data {data_time.avg:.3f}\t'
+                'Avg Loss {losses.avg:.4f}\t'
+                'Avg Acc {accs.avg:.4f}\t'.format(batch_time=batch_time,
+                    data_time=data_time, losses=losses, accs=accs))
+
+    return (losses.avg, accs.avg)

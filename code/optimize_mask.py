@@ -1,6 +1,6 @@
 import caffe
 
-do_plotting = True 
+do_plotting = False 
 import numpy as np
 import pylab
 if do_plotting:
@@ -11,11 +11,11 @@ import scipy
 from PIL import ImageFilter, Image
 
 # COCO API
-coco_root = '/data/datasets/coco'  # modify to point to your COCO installation
-sys.path.insert(0, coco_root + '/PythonAPI')
-from pycocotools.coco import COCO
-from pycocotools.cocoeval import COCOeval
-import pycocotools.mask as mask
+#coco_root = '/data/datasets/coco'  # modify to point to your COCO installation
+#sys.path.insert(0, coco_root + '/PythonAPI')
+#from pycocotools.coco import COCO
+#from pycocotools.cocoeval import COCOeval
+#import pycocotools.mask as mask
 
 # CAFFE
 caffe_root = '/users/ruthfong/sample_code/Caffe-ExcitationBP'
