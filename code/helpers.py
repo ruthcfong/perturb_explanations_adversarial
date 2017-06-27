@@ -5,6 +5,7 @@ import os, time
 from shutil import copyfile
 import torch
 from torch.autograd import Variable
+from PIL import Image
 
 from defaults import (caffe_dir, alexnet_prototxt, alexnet_model, googlenet_prototxt, googlenet_model, googlenet_voc_prototxt, googlenet_voc_model, 
     googlenet_coco_prototxt, googlenet_coco_model, vgg16_prototxt, vgg16_model)
@@ -517,3 +518,9 @@ def run_epoch(loader, model, criterion, optimizer, epoch, train = True, cuda = F
                     data_time=data_time, losses=losses, accs=accs))
 
     return (losses.avg, accs.avg)
+
+def pil_loader(path):
+    # open path as file to avoid ResourceWarning (https://github.com/python-pillow/Pillow/issues/835)
+    with open(path, 'rb') as f:
+        with Image.open(f) as img:
+            return img.convert('RGB')

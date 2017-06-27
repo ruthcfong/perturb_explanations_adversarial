@@ -196,7 +196,7 @@ def check_clean_image(net, transformer, path, label, top = 'prob'):
 
 
 def main():
-    gpu = 1 
+    gpu = 0 
     net_type = 'googlenet'
 
     caffe.set_device(gpu)
@@ -210,7 +210,7 @@ def main():
     paths = np.array(paths)
     labels = np.array(labels)
 
-    task_type = 'mask'
+    task_type = 'heatmaps'
     
     epsilons = np.array([1,2,4,8,12,16])
     methods = ['fgsm', 'one_step', 'fgsm_iter', 'one_step_iter']
@@ -218,13 +218,13 @@ def main():
     if task_type == 'mask':
         num_iters = 50
 
-        start_i = 100 
-        end_i = 5000 
+        start_i = 350 
+        end_i = 625 
     elif task_type == 'heatmaps':
         start_i = 0
         end_i = 5000
 
-        heatmap_type = 'guided_backprop'
+        heatmap_type = 'excitation_backprop'
     elif task_type == 'graph':
         generate_adversarial_graph(net, paths, labels)
         return

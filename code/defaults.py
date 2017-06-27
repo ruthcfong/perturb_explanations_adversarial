@@ -11,6 +11,14 @@ vgg16_model = '/users/ruthfong/packages/caffe/models/vgg16/VGG_ILSVRC_16_layers.
 googlenet_prototxt = '/users/ruthfong/packages/caffe/models/bvlc_googlenet/deploy_force_backward.prototxt'
 googlenet_model = '/users/ruthfong/packages/caffe/models/bvlc_googlenet/bvlc_googlenet.caffemodel'
 
+# computed on range(100,4000) on heldout set
+mus = {'defaults_iter_50': 0.917910, 'saliency': 0.076455, 'guided_backprop': 0.039671,
+        'grad_cam': 0.353798, 'contrast_excitation_backprop': 0.049973,
+        'excitation_backprop': 0.206981}
+sigmas = {'defaults_iter_50': 0.157649, 'saliency': 0.070174, 'guided_backprop': 0.054773,
+        'grad_cam': 0.301801, 'contrast_excitation_backprop': 0.124677,
+        'excitation_backprop': 0.147678}
+
 voc_dir = '/users/ruthfong/sample_code/Caffe-ExcitationBP/models/finetune_googlenet_voc_pascal'
 googlenet_voc_prototxt = os.path.join(voc_dir, 'deploy_force_backward.prototxt')
 googlenet_voc_model = '/data/ruthfong/VOCdevkit/VOC2007/caffe/snapshots/finetune_googlenet_voc_pascal_iter_5000.caffemodel'

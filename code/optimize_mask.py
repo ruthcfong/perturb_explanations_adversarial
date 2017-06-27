@@ -1,6 +1,6 @@
 import caffe
 
-do_plotting = False 
+do_plotting = True 
 import numpy as np
 import pylab
 if do_plotting:
