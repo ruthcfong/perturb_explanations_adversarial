@@ -64,29 +64,28 @@ def main():
     conserve = True # conserve memory, don't save state
     heatmap_mode = 'single'
     all_heatmap_types = ['mask', 'saliency', 'guided_backprop', 'grad_cam', 'contrast_excitation_backprop', 'excitation_backprop']
+    normalize = True 
+    num_iters = 50
     if heatmap_mode == 'all':
         heatmap_types = all_heatmap_types
     elif heatmap_mode == 'all_but_one':
-        excluded_heatmap = 'guided_backprop'
+        excluded_heatmap = 'mask'
         heatmap_types = [h for h in all_heatmap_types if h is not excluded_heatmap]
     elif heatmap_mode == 'single':
-        heatmap_type = 'mask'
-        normalize = True 
+        heatmap_type = 'image'
         if heatmap_type == 'mask':
-            num_iters = 50
             folder_name = 'defaults_iter_%d' % num_iters
         elif heatmap_type == 'image':
-            pretrained = True
+            pretrained = False 
             folder_name = '%s_pretrained_%d' % (heatmap_type, pretrained)
             normalize = True
         else:
             folder_name = heatmap_type
 
-    adv_types = ['fgsm', 'one_step', 'fgsm_iter', 'one_step_iter']
+    #adv_types = ['fgsm', 'one_step', 'fgsm_iter', 'one_step_iter']
+    adv_types = ['one_step_iter']
+    #epsilons = [8]
     epsilons = [1,2,4,8,12]
-    #adv_types = ['fgsm', 'one_step']
-    #adv_types = ['fgsm_iter', 'one_step_iter']
-    #epsilons = [8,12]
 
     for eps in epsilons:
         for adv_type in adv_types:
@@ -178,16 +177,16 @@ def main():
                             adv_type, eps, folder_name)
             else:
                 if heatmap_mode == 'all':
-                    fn = '/data/ruthfong/perturb_explanations_adversarial/classifiers/checkpoint/custom_alexnet_%s_eps_%d_%s_checkpoint.pth.tar' % (
-                            adv_type, eps, heatmap_mode)
-                    small_fn = '/data/ruthfong/perturb_explanations_adversarial/results_classifiers/custom_alexnet_%s_eps_%d_%s_checkpoint.pth.tar' % (adv_type, eps, heatmap_mode)
-                    best_fn = '/data/ruthfong/perturb_explanations_adversarial/classifiers/best/custom_alexnet_%s_eps_%d_%s_best.pth.tar' % (
-                            adv_type, eps, heatmap_mode)
+                    fn = '/data/ruthfong/perturb_explanations_adversarial/classifiers/checkpoint/custom_alexnet_%s_eps_%d_%s_norm_%d_checkpoint.pth.tar' % (
+                            adv_type, eps, heatmap_mode, normalize)
+                    small_fn = '/data/ruthfong/perturb_explanations_adversarial/results_classifiers/custom_alexnet_%s_eps_%d_%s_norm_%d_checkpoint.pth.tar' % (adv_type, eps, heatmap_mode,normalize)
+                    best_fn = '/data/ruthfong/perturb_explanations_adversarial/classifiers/best/custom_alexnet_%s_eps_%d_%s_norm_%d_best.pth.tar' % (
+                            adv_type, eps, heatmap_mode,normalize)
                 elif heatmap_mode == 'all_but_one':
-                    fn = '/data/ruthfong/perturb_explanations_adversarial/classifiers/checkpoint/custom_alexnet_%s_eps_%d_%s_%s_checkpoint.pth.tar' % (adv_type, eps, heatmap_mode, excluded_heatmap)
-                    small_fn = '/data/ruthfong/perturb_explanations_adversarial/results_classifiers/custom_alexnet_%s_eps_%d_%s_%s_checkpoint.pth.tar' % (adv_type, eps, heatmap_mode, excluded_heatmap)
-                    best_fn = '/data/ruthfong/perturb_explanations_adversarial/classifiers/best/custom_alexnet_%s_eps_%d_%s_%s_best.pth.tar' % (
-                            adv_type, eps, heatmap_mode, excluded_heatmap)
+                    fn = '/data/ruthfong/perturb_explanations_adversarial/classifiers/checkpoint/custom_alexnet_%s_eps_%d_%s_%s_norm_%d_checkpoint.pth.tar' % (adv_type, eps, heatmap_mode, excluded_heatmap, normalize)
+                    small_fn = '/data/ruthfong/perturb_explanations_adversarial/results_classifiers/custom_alexnet_%s_eps_%d_%s_%s_norm_%d_checkpoint.pth.tar' % (adv_type, eps, heatmap_mode, excluded_heatmap, normalize)
+                    best_fn = '/data/ruthfong/perturb_explanations_adversarial/classifiers/best/custom_alexnet_%s_eps_%d_%s_%s_norm_%d_best.pth.tar' % (
+                            adv_type, eps, heatmap_mode, excluded_heatmap, normalize)
 
                 clean_dir = []
                 adv_dir = []

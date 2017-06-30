@@ -196,7 +196,7 @@ def check_clean_image(net, transformer, path, label, top = 'prob'):
 
 
 def main():
-    gpu = 0 
+    gpu = 1
     net_type = 'googlenet'
 
     caffe.set_device(gpu)
@@ -205,12 +205,12 @@ def main():
     net = get_net(net_type)
 
     labels_desc = np.loadtxt('/home/ruthfong/packages/caffe/data/ilsvrc12/synset_words.txt', str, delimiter='\t')
-    #(paths, labels) = read_imdb('/home/ruthfong/packages/caffe/data/ilsvrc12/val_imdb.txt')
-    (paths, labels) = read_imdb('/home/ruthfong/packages/caffe/data/ilsvrc12/annotated_train_heldout_imdb.txt')
+    (paths, labels) = read_imdb('/home/ruthfong/packages/caffe/data/ilsvrc12/val_imdb.txt')
+    #(paths, labels) = read_imdb('/home/ruthfong/packages/caffe/data/ilsvrc12/annotated_train_heldout_imdb.txt')
     paths = np.array(paths)
     labels = np.array(labels)
 
-    task_type = 'heatmaps'
+    task_type = 'adversarial'
     
     epsilons = np.array([1,2,4,8,12,16])
     methods = ['fgsm', 'one_step', 'fgsm_iter', 'one_step_iter']
@@ -225,6 +225,11 @@ def main():
         end_i = 5000
 
         heatmap_type = 'excitation_backprop'
+    elif task_type == 'adversarial':
+        start_i = 0  
+        end_i = 9375 
+        adv_img_dir = '/data/ruthfong/perturb_explanations_adversarial/adv_imgs/imagenet_val'
+        generate_adversarial_examples(net, paths, labels, adv_img_dir, start_i, end_i)
     elif task_type == 'graph':
         generate_adversarial_graph(net, paths, labels)
         return
@@ -452,25 +457,22 @@ def learn_masks(net, paths, labels, adv_dir, adv_mask_dir, true_mask_dir, fig_di
         print ind, time.time() - start, os.path.join(adv_mask_dir, '%d.png' % ind)
 
 
-def generate_adversarial_examples(net, paths, labels):
+def generate_adversarial_examples(net, paths, labels, adv_img_dir, start_i = 0, end_i = 5000):
     transformer = get_ILSVRC_net_transformer(net)
 
-    fig_path = 'adversarial_accuracy.png'
+    #fig_path = 'adversarial_accuracy.png'
     save_adv_img = True
-    adv_img_dir = '/data/ruthfong/perturb_explanations_adversarial/adv_imgs/imagenet_train_heldout'
     #epsilons = np.array([2,4,8,12,16,20,24,28,32,40,48,56,64,96,112,128])
     epsilons = np.array([1,2,4,8,12,16])
-    methods = ['clean', 'fgsm', 'one_step', 'fgsm_iter', 'one_step_iter']
+    methods = ['fgsm', 'one_step', 'fgsm_iter', 'one_step_iter']
 
     top = 'prob'
     show_fig = False
 
-    num_examples = 5000 
-
     num_top1 = np.zeros((len(methods), len(epsilons)))
     num_top5 = np.zeros((len(methods), len(epsilons)))
 
-    for i in range(num_examples):
+    for i in range(start_i, end_i):
         start = time.time()
         for j in range(len(methods)):
             m = methods[j]
@@ -484,6 +486,11 @@ def generate_adversarial_examples(net, paths, labels):
                 continue
             for k in range(len(epsilons)):
                 e = epsilons[k]
+                adv_dir = os.path.join(adv_img_dir, m, 'eps_%d' % e)
+                adv_path = os.path.join(adv_dir, '%d.png' % i)
+                if os.path.exists(adv_path):
+                    print '%s exists so skipping' % adv_path
+                    continue
                 if 'fgsm' in m:
                     method = 'fgsm'
                 elif 'one_step' in m:
@@ -522,19 +529,19 @@ def generate_adversarial_examples(net, paths, labels):
         print i, time.time() - start
 
 
-    f, ax = plt.subplots(1,2)
-    f.set_size_inches(12,4)
-    ax[0].plot(epsilons, np.transpose(num_top1/float(num_examples)), marker='o')
-    ax[0].set_ylabel('top-1 accuracy')
-    ax[1].plot(epsilons, np.transpose(num_top5/float(num_examples)), marker='o')
-    ax[1].set_ylabel('top-5 accuracy')
-    for a in ax:
-        a.set_ylim([0,1])
-        a.set_xlabel(r'$\epsilon$')
-        a.legend(methods)
-        a.set_title(r'$N = %d$' % num_examples)
-    plt.savefig(fig_path)
-    plt.close()
+    #f, ax = plt.subplots(1,2)
+    #f.set_size_inches(12,4)
+    #ax[0].plot(epsilons, np.transpose(num_top1/float(num_examples)), marker='o')
+    #ax[0].set_ylabel('top-1 accuracy')
+    #ax[1].plot(epsilons, np.transpose(num_top5/float(num_examples)), marker='o')
+    #ax[1].set_ylabel('top-5 accuracy')
+    #for a in ax:
+    #    a.set_ylim([0,1])
+    #    a.set_xlabel(r'$\epsilon$')
+    #    a.legend(methods)
+    #    a.set_title(r'$N = %d$' % num_examples)
+    #plt.savefig(fig_path)
+    #plt.close()
     #plt.show()
 
 
